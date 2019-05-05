@@ -64,7 +64,7 @@ void WorkerClientBase::initZMQ() {
 //sample code in c++ http://zguide.zeromq.org/cpp:lpclient
 void WorkerClientBase::connect() {
     printf("Opening new client socket connection to %s", zmq_address);
-    if(!socket.connect(zmq_address)) {
+    while(!socket.connect(zmq_address)) {
         printf("Error connecting to worker");
     }
     //  Configure socket to not wait at close time
