@@ -8,7 +8,7 @@
 #include <sstream>
 using namespace std;
 
-#define REQUEST_TIMEOUT     2500    //  msecs, (> 1000!)
+#define REQUEST_TIMEOUT     10000    //  msecs, (> 1000!)
 #define REQUEST_RETRIES     3       //  Before we abandon
 
 class WorkerClientBase {
@@ -48,6 +48,7 @@ void WorkerClientBase::init() {
 }
 
 void WorkerClientBase::close() {
+    client->close();
     delete client;
 }
 
@@ -90,6 +91,7 @@ string WorkerClientBase::sendTX(string payload) {
                     cout << "I: server replied OK (" << reply.size() << ") bytes" << endl;
                     retries_left = 0;
                     expect_reply = false;
+                    close();
                 }
                 else {
                     cout << "E: malformed reply from server: " << reply << endl;
