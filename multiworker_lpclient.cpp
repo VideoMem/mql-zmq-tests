@@ -13,13 +13,13 @@ using namespace std;
 
 class WorkerClientBase {
     protected:
-        string zmq_address; 
+        string zmq_address;
         zmq::socket_t *client;
         zmq::context_t *context;
         void init();
         void close();
         void connect();
-   public: 
+   public:
         virtual string getName() { return "WorkerClientBase"; }
         void setAddr(string addr) { zmq_address = addr; }
         string sendTX(string payload);
@@ -54,7 +54,7 @@ void WorkerClientBase::close() {
 WorkerClientBase::~WorkerClientBase() {
     close();
     delete context;
-};
+}
 
 void WorkerClientBase::connect() {
     cout << "I: connecting to server…" << endl;
@@ -153,7 +153,7 @@ void OnTick() {
 int main () {
     OnInit();
     while(true) {
-        OnTick();    
+        OnTick();
     }
     return 0;
 }
