@@ -30,14 +30,14 @@ class WorkerClientBase {
 
 class WorkerA: public WorkerClientBase {
     public:
-        WorkerA(string addr);
+        WorkerA(string addr) { setAddr(addr); }
         string getName() { return "WorkerA"; }
         void txSomething();
 };
 
 class WorkerB: public WorkerClientBase {
     public:
-        WorkerB(string addr);
+        WorkerB(string addr) { setAddr(addr); }
         string getName() { return "WorkerB"; }
         void txSomething();
 
@@ -69,6 +69,7 @@ void WorkerClientBase::connect() {
 string WorkerClientBase::sendTX(string payload) {
     int retries_left = REQUEST_RETRIES;
     string reply = "";
+    connect();
 
     while (retries_left) {
         stringstream request;
@@ -112,16 +113,6 @@ string WorkerClientBase::sendTX(string payload) {
         }
     }
     return reply;
-}
-
-WorkerA::WorkerA(string addr):WorkerClientBase() {
-    setAddr(addr);
-    connect();
-}
-
-WorkerB::WorkerB(string addr):WorkerClientBase() {
-    setAddr(addr);
-    connect();
 }
 
 void WorkerA::txSomething() {
