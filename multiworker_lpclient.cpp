@@ -23,6 +23,7 @@ class WorkerClientBase {
         virtual string getName() { return "WorkerClientBase"; }
         void setAddr(string addr) { zmq_address = addr; }
         string sendTX(string payload);
+        WorkerClientBase() { context = new zmq::context_t(1); }
         ~WorkerClientBase();
 };
 
@@ -43,17 +44,16 @@ class WorkerB: public WorkerClientBase {
 };
 
 void WorkerClientBase::init() {
-    context = new zmq::context_t(1);
     client = new zmq::socket_t (*context, ZMQ_REQ);
 }
 
 void WorkerClientBase::close() {
     delete client;
-    delete context;
 }
 
 WorkerClientBase::~WorkerClientBase() {
     close();
+    delete context;
 };
 
 void WorkerClientBase::connect() {
@@ -114,12 +114,12 @@ string WorkerClientBase::sendTX(string payload) {
     return reply;
 }
 
-WorkerA::WorkerA(string addr) {
+WorkerA::WorkerA(string addr):WorkerClientBase() {
     setAddr(addr);
     connect();
 }
 
-WorkerB::WorkerB(string addr) {
+WorkerB::WorkerB(string addr):WorkerClientBase() {
     setAddr(addr);
     connect();
 }
