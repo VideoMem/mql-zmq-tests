@@ -2,6 +2,7 @@
 //  Lazy Pirate client
 //  Use zmq_poll to do a safe request-reply
 //  To run, start piserver and then randomly kill/restart it
+//  This example needs two workers on different addresses
 //
 #include "zhelpers.hpp"
 #include <sstream>
@@ -24,6 +25,22 @@ class WorkerClientBase {
         ~WorkerClientBase();
 };
 
+
+class WorkerA: public WorkerClientBase {
+    public:
+        WorkerA(zmq::context_t &ctx, std::string addr);
+        std::string getName() { return "WorkerA"; }
+        void txSomething();
+};
+
+class WorkerB: public WorkerClientBase {
+    public:
+        WorkerB(zmq::context_t &ctx, std::string addr);
+        std::string getName() { return "WorkerB"; }
+        void txSomething();
+
+};
+
 void WorkerClientBase::initZMQ() {
     client = new zmq::socket_t (*context, ZMQ_REQ);
 }
@@ -31,7 +48,6 @@ void WorkerClientBase::initZMQ() {
 
 WorkerClientBase::WorkerClientBase(zmq::context_t &ctx) {
     context = &ctx;
-    initZMQ();
 }
 
 WorkerClientBase::~WorkerClientBase() {
@@ -40,6 +56,7 @@ WorkerClientBase::~WorkerClientBase() {
 
 void WorkerClientBase::connect() {
     std::cout << "I: connecting to server…" << std::endl;
+    initZMQ();
     client->connect (zmq_address);
 
     //  Configure socket to not wait at close time
@@ -48,7 +65,6 @@ void WorkerClientBase::connect() {
 }
 
 std::string WorkerClientBase::sendTX(std::string payload) {
-    int sequence = 0;
     int retries_left = REQUEST_RETRIES;
     std::string reply = "";
 
@@ -68,11 +84,10 @@ std::string WorkerClientBase::sendTX(std::string payload) {
             if (items[0].revents & ZMQ_POLLIN) {
                 //  We got a reply from the server, must match sequence
                 reply = s_recv (*client);
-                if (atoi (reply.c_str ()) == sequence) {
+                if (reply.size() > 0) {
                     std::cout << "I: server replied OK (" << reply << ")" << std::endl;
-                    retries_left = REQUEST_RETRIES;
+                    retries_left = 0;
                     expect_reply = false;
-                    return reply;
                 }
                 else {
                     std::cout << "E: malformed reply from server: " << reply << std::endl;
@@ -88,7 +103,6 @@ std::string WorkerClientBase::sendTX(std::string payload) {
                 std::cout << "W: no response from server, retrying…" << std::endl;
                 //  Old socket will be confused; close it and open a new one
                 delete client;
-                initZMQ();
                 connect();
                 //  Send request again, on new socket
                 s_send (*client, request.str());
@@ -97,21 +111,6 @@ std::string WorkerClientBase::sendTX(std::string payload) {
     }
     return reply;
 }
-
-class WorkerA: public WorkerClientBase {
-    public:
-        WorkerA(zmq::context_t &ctx, std::string addr);
-        std::string getName() { return "WorkerA"; }
-        void txSomething();
-};
-
-class WorkerB: public WorkerClientBase {
-    public:
-        WorkerB(zmq::context_t &ctx, std::string addr);
-        std::string getName() { return "WorkerB"; }
-        void txSomething();
-
-};
 
 WorkerA::WorkerA(zmq::context_t &ctx, std::string addr):WorkerClientBase(ctx) {
     setAddr(addr);
@@ -133,26 +132,27 @@ void WorkerB::txSomething() {
     printf("reply body: %s\n", sendTX(payload).c_str());
 }
 
-zmq::context_t sharedContext (1);
 WorkerA* workerA;
 WorkerB* workerB;
-void onInit() {
-   workerA = new WorkerA(sharedContext, "tcp://localhost:5555");
-   workerB = new WorkerB(sharedContext, "tcp://localhost:5566");
+
+void OnInit(zmq::context_t &context) {
+   workerA = new WorkerA(context, "tcp://localhost:5555");
+   workerB = new WorkerB(context, "tcp://localhost:5566");
 }
 
 int tickC = 0;
-void onTick() {
-    printf("On tick loop number: %d", tickC);
+void OnTick() {
+    printf("On tick loop number %d:\n", tickC);
     workerA->txSomething();
     workerB->txSomething();
     tickC++;
 }
 
 int main () {
-    onInit();
+    zmq::context_t sharedContext(1);
+    OnInit(sharedContext);
     while(true) {
-        onTick();    
+        OnTick();    
     }
     return 0;
 }
