@@ -8,7 +8,7 @@
 #include <sstream>
 using namespace std;
 
-#define REQUEST_TIMEOUT     10000    //  msecs, (> 1000!)
+#define REQUEST_TIMEOUT     2500    //  msecs, (> 1000!)
 #define REQUEST_RETRIES     3       //  Before we abandon
 
 class WorkerClientBase {
@@ -85,7 +85,7 @@ string WorkerClientBase::sendTX(string payload) {
 
             //  If we got a reply, process it
             if (items[0].revents & ZMQ_POLLIN) {
-                //  We got a reply from the server, must match sequence
+                //  We got a reply from the server
                 reply = s_recv (*client);
                 if (reply.size() > 0) {
                     cout << "I: server replied OK (" << reply.size() << ") bytes" << endl;
@@ -101,6 +101,7 @@ string WorkerClientBase::sendTX(string payload) {
             if (--retries_left == 0) {
                 cout << "E: server seems to be offline, abandoning" << endl;
                 expect_reply = false;
+                close();
                 break;
             }
             else {
