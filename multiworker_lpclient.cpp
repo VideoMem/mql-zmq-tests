@@ -75,7 +75,6 @@ string WorkerClientBase::sendTX(string payload) {
         stringstream request;
         request << payload;
         s_send (*client, request.str());
-        sleep (1);
 
         bool expect_reply = true;
         while (expect_reply) {
