@@ -21,37 +21,34 @@ class WorkerClientBase {
         virtual std::string getName() { return "WorkerClientBase"; }
         void setAddr(std::string addr) { zmq_address = addr; }
         std::string sendTX(std::string payload);
-        WorkerClientBase(zmq::context_t &ctx);
+        WorkerClientBase();
         ~WorkerClientBase();
 };
 
 
 class WorkerA: public WorkerClientBase {
     public:
-        WorkerA(zmq::context_t &ctx, std::string addr);
+        WorkerA(std::string addr);
         std::string getName() { return "WorkerA"; }
         void txSomething();
 };
 
 class WorkerB: public WorkerClientBase {
     public:
-        WorkerB(zmq::context_t &ctx, std::string addr);
+        WorkerB(std::string addr);
         std::string getName() { return "WorkerB"; }
         void txSomething();
 
 };
 
 void WorkerClientBase::initZMQ() {
+    context = new zmq::context_t(1);
     client = new zmq::socket_t (*context, ZMQ_REQ);
-}
-
-
-WorkerClientBase::WorkerClientBase(zmq::context_t &ctx) {
-    context = &ctx;
 }
 
 WorkerClientBase::~WorkerClientBase() {
     delete client;
+    delete context;
 };
 
 void WorkerClientBase::connect() {
@@ -85,7 +82,7 @@ std::string WorkerClientBase::sendTX(std::string payload) {
                 //  We got a reply from the server, must match sequence
                 reply = s_recv (*client);
                 if (reply.size() > 0) {
-                    std::cout << "I: server replied OK (" << reply << ")" << std::endl;
+                    std::cout << "I: server replied OK (" << reply.size() << ") bytes" << std::endl;
                     retries_left = 0;
                     expect_reply = false;
                 }
@@ -112,12 +109,12 @@ std::string WorkerClientBase::sendTX(std::string payload) {
     return reply;
 }
 
-WorkerA::WorkerA(zmq::context_t &ctx, std::string addr):WorkerClientBase(ctx) {
+WorkerA::WorkerA(std::string addr) {
     setAddr(addr);
     connect();
 }
 
-WorkerB::WorkerB(zmq::context_t &ctx, std::string addr):WorkerClientBase(ctx) {
+WorkerB::WorkerB(std::string addr) {
     setAddr(addr);
     connect();
 }
@@ -135,9 +132,9 @@ void WorkerB::txSomething() {
 WorkerA* workerA;
 WorkerB* workerB;
 
-void OnInit(zmq::context_t &context) {
-   workerA = new WorkerA(context, "tcp://localhost:5555");
-   workerB = new WorkerB(context, "tcp://localhost:5566");
+void OnInit() {
+   workerA = new WorkerA("tcp://localhost:5555");
+   workerB = new WorkerB("tcp://localhost:5566");
 }
 
 int tickC = 0;
@@ -149,8 +146,7 @@ void OnTick() {
 }
 
 int main () {
-    zmq::context_t sharedContext(1);
-    OnInit(sharedContext);
+    OnInit();
     while(true) {
         OnTick();    
     }
