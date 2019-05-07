@@ -6,54 +6,59 @@
 //
 #include "zhelpers.hpp"
 #include <sstream>
+using namespace std;
 
 #define REQUEST_TIMEOUT     2500    //  msecs, (> 1000!)
 #define REQUEST_RETRIES     3       //  Before we abandon
 
 class WorkerClientBase {
     protected:
-        std::string zmq_address; 
+        string zmq_address; 
         zmq::socket_t *client;
         zmq::context_t *context;
-        void initZMQ();
+        void init();
+        void close();
         void connect();
    public: 
-        virtual std::string getName() { return "WorkerClientBase"; }
-        void setAddr(std::string addr) { zmq_address = addr; }
-        std::string sendTX(std::string payload);
-        WorkerClientBase();
+        virtual string getName() { return "WorkerClientBase"; }
+        void setAddr(string addr) { zmq_address = addr; }
+        string sendTX(string payload);
         ~WorkerClientBase();
 };
 
 
 class WorkerA: public WorkerClientBase {
     public:
-        WorkerA(std::string addr);
-        std::string getName() { return "WorkerA"; }
+        WorkerA(string addr);
+        string getName() { return "WorkerA"; }
         void txSomething();
 };
 
 class WorkerB: public WorkerClientBase {
     public:
-        WorkerB(std::string addr);
-        std::string getName() { return "WorkerB"; }
+        WorkerB(string addr);
+        string getName() { return "WorkerB"; }
         void txSomething();
 
 };
 
-void WorkerClientBase::initZMQ() {
+void WorkerClientBase::init() {
     context = new zmq::context_t(1);
     client = new zmq::socket_t (*context, ZMQ_REQ);
 }
 
-WorkerClientBase::~WorkerClientBase() {
+void WorkerClientBase::close() {
     delete client;
     delete context;
+}
+
+WorkerClientBase::~WorkerClientBase() {
+    close();
 };
 
 void WorkerClientBase::connect() {
-    std::cout << "I: connecting to server…" << std::endl;
-    initZMQ();
+    cout << "I: connecting to server…" << endl;
+    init();
     client->connect (zmq_address);
 
     //  Configure socket to not wait at close time
@@ -61,12 +66,12 @@ void WorkerClientBase::connect() {
     client->setsockopt (ZMQ_LINGER, &linger, sizeof (linger));
 }
 
-std::string WorkerClientBase::sendTX(std::string payload) {
+string WorkerClientBase::sendTX(string payload) {
     int retries_left = REQUEST_RETRIES;
-    std::string reply = "";
+    string reply = "";
 
     while (retries_left) {
-        std::stringstream request;
+        stringstream request;
         request << payload;
         s_send (*client, request.str());
         sleep (1);
@@ -82,24 +87,24 @@ std::string WorkerClientBase::sendTX(std::string payload) {
                 //  We got a reply from the server, must match sequence
                 reply = s_recv (*client);
                 if (reply.size() > 0) {
-                    std::cout << "I: server replied OK (" << reply.size() << ") bytes" << std::endl;
+                    cout << "I: server replied OK (" << reply.size() << ") bytes" << endl;
                     retries_left = 0;
                     expect_reply = false;
                 }
                 else {
-                    std::cout << "E: malformed reply from server: " << reply << std::endl;
+                    cout << "E: malformed reply from server: " << reply << endl;
                 }
             }
             else
             if (--retries_left == 0) {
-                std::cout << "E: server seems to be offline, abandoning" << std::endl;
+                cout << "E: server seems to be offline, abandoning" << endl;
                 expect_reply = false;
                 break;
             }
             else {
-                std::cout << "W: no response from server, retrying…" << std::endl;
+                cout << "W: no response from server, retrying…" << endl;
                 //  Old socket will be confused; close it and open a new one
-                delete client;
+                close();
                 connect();
                 //  Send request again, on new socket
                 s_send (*client, request.str());
@@ -109,23 +114,23 @@ std::string WorkerClientBase::sendTX(std::string payload) {
     return reply;
 }
 
-WorkerA::WorkerA(std::string addr) {
+WorkerA::WorkerA(string addr) {
     setAddr(addr);
     connect();
 }
 
-WorkerB::WorkerB(std::string addr) {
+WorkerB::WorkerB(string addr) {
     setAddr(addr);
     connect();
 }
 
 void WorkerA::txSomething() {
-    std::string payload = "#this is a R script";
+    string payload = "#this is a R script";
     printf("reply body: %s\n", sendTX(payload).c_str());
 }
 
 void WorkerB::txSomething() {
-    std::string payload = "{ \"some_json_log\": { \"SYMBOL\": \"EURUSD\", \"MAGIC\": \"42\", \"etc ...\":\"etc\" }}";
+    string payload = "{ \"some_json_log\": { \"SYMBOL\": \"EURUSD\", \"MAGIC\": \"42\", \"etc ...\":\"etc\" }}";
     printf("reply body: %s\n", sendTX(payload).c_str());
 }
 
