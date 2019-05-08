@@ -1,5 +1,5 @@
 //+------------------------------------------------------------------+
-//|                                           multiworker_lpclient.mq4 |
+//|                                         multiworker_lpclient.mq4 |
 //|                                  Copyleft 2019, swilwerth@github |
 //|                                             github.com/swilwerth |
 //+------------------------------------------------------------------+
@@ -52,8 +52,8 @@ void WorkerClientBase::init() {
 }
 
 void WorkerClientBase::close() {
-    socket.close();
-    //delete socket;
+    socket.disconnect(zmq_address);
+    //delete socket; //no way to recover from this
 }
 
 WorkerClientBase::~WorkerClientBase() {
