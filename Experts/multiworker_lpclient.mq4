@@ -25,6 +25,7 @@ class WorkerClientBase {
         void init();
         void close();
         void connect();
+        void poll(PollItem &p[]);
     public:
         virtual string getName() { return "WorkerClientBase"; }
         void setAddr(string addr) { zmq_address = addr; }
@@ -52,6 +53,7 @@ void WorkerClientBase::init() {
 }
 
 void WorkerClientBase::close() {
+    socket.disconnect(zmq_address);
     delete socket;
 }
 
@@ -64,10 +66,8 @@ WorkerClientBase::~WorkerClientBase() {
 //sample code in c++ http://zguide.zeromq.org/cpp:lpclient
 void WorkerClientBase::connect() {
     printf("I: connecting to server…");
-    Sleep(3);
     init();
     printf("Init Ok");
-    Sleep(3);
     printf("Connect %d", socket.connect(zmq_address));
 
     //  Configure socket to not wait at close time
@@ -75,9 +75,19 @@ void WorkerClientBase::connect() {
     socket.setLinger(linger);
 }
 
+void WorkerClientBase::poll(PollItem &items[]) {
+    //  Poll socket for a reply, with timeout
+    PollItem item;
+    socket.fillPollItem(item, ZMQ_POLLIN);
+    items[0] = item;
+    printf("Poll");
+    socket.poll(items, REQUEST_TIMEOUT);
+}
+
 ZmqMsg WorkerClientBase::sendTX(string payload) {
     int retries_left = REQUEST_RETRIES;
     ZmqMsg reply;
+    PollItem items[1];
 
     while(retries_left) {
         ZmqMsg request(payload);
@@ -87,13 +97,7 @@ ZmqMsg WorkerClientBase::sendTX(string payload) {
         bool expect_reply = true;
         while(expect_reply) {
             ZmqMsg reply;
-            //  Poll socket for a reply, with timeout
-            PollItem item;
-            PollItem items[1];
-            socket.fillPollItem(item, ZMQ_POLLIN);
-            items[0] = item;
-            printf("Poll");
-            socket.poll(items, REQUEST_TIMEOUT);
+            poll(items);
             //  If we got a reply, process it
             if ((items[0].revents & ZMQ_POLLIN) == 1) {
                 printf("Revents");
