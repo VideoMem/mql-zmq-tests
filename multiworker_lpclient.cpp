@@ -30,14 +30,14 @@ class WorkerClientBase {
 
 class WorkerA: public WorkerClientBase {
     public:
-        WorkerA(string addr) { setAddr(addr); }
+        WorkerA(string addr) { setAddr(addr); connect(); }
         string getName() { return "WorkerA"; }
         void txSomething();
 };
 
 class WorkerB: public WorkerClientBase {
     public:
-        WorkerB(string addr) { setAddr(addr); }
+        WorkerB(string addr) { setAddr(addr); connect(); }
         string getName() { return "WorkerB"; }
         void txSomething();
 
@@ -70,7 +70,6 @@ void WorkerClientBase::connect() {
 string WorkerClientBase::sendTX(string payload) {
     int retries_left = REQUEST_RETRIES;
     string reply = "";
-    connect();
 
     while (retries_left) {
         stringstream request;
@@ -91,7 +90,6 @@ string WorkerClientBase::sendTX(string payload) {
                     cout << "I: server replied OK (" << reply.size() << ") bytes" << endl;
                     retries_left = 0;
                     expect_reply = false;
-                    close();
                 }
                 else {
                     cout << "E: malformed reply from server: " << reply << endl;
@@ -102,6 +100,7 @@ string WorkerClientBase::sendTX(string payload) {
                 cout << "E: server seems to be offline, abandoning" << endl;
                 expect_reply = false;
                 close();
+                connect();
                 break;
             }
             else {
@@ -119,12 +118,12 @@ string WorkerClientBase::sendTX(string payload) {
 
 void WorkerA::txSomething() {
     string payload = "#this is a R script";
-    printf("reply body: %s\n", sendTX(payload).c_str());
+    printf("reply body: %s", sendTX(payload).c_str());
 }
 
 void WorkerB::txSomething() {
     string payload = "{ \"some_json_log\": { \"SYMBOL\": \"EURUSD\", \"MAGIC\": \"42\", \"etc ...\":\"etc\" }}";
-    printf("reply body: %s\n", sendTX(payload).c_str());
+    printf("reply body: %s", sendTX(payload).c_str());
 }
 
 WorkerA* workerA;

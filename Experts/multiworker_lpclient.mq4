@@ -35,14 +35,14 @@ class WorkerClientBase {
 
 class WorkerA: public WorkerClientBase {
     public:
-        WorkerA(string addr) { setAddr(addr); }
+        WorkerA(string addr) { setAddr(addr); connect(); }
         string getName() { return "WorkerA"; }
         void txSomething();
 };
 
 class WorkerB: public WorkerClientBase {
     public:
-        WorkerB(string addr) { setAddr(addr); }
+        WorkerB(string addr) { setAddr(addr); connect(); }
         string getName() { return "WorkerB"; }
         void txSomething();
 };
@@ -52,8 +52,8 @@ void WorkerClientBase::init() {
 }
 
 void WorkerClientBase::close() {
-    socket.disconnect(zmq_address);
-    //delete socket; //no way to recover from this
+    socket.close();
+    delete socket;
 }
 
 WorkerClientBase::~WorkerClientBase() {
@@ -80,7 +80,6 @@ ZmqMsg WorkerClientBase::sendTX(string payload) {
     int retries_left = REQUEST_RETRIES;
 
     while(retries_left) {
-        connect();
         socket.send(request);
 
         bool expect_reply = true;
@@ -101,21 +100,22 @@ ZmqMsg WorkerClientBase::sendTX(string payload) {
                     retries_left = 0;
                     expect_reply = false;
                 } else 
-                    printf("Malformed reply from worker");
+                    printf("E: malformed reply from server: %s", reply.getData());
             }
             else
             if(--retries_left == 0) {
                 printf("E: server seems to be offline, abandoning");
                 expect_reply = false;
+                close();
+                connect();
                 break;
             } else {
-                printf("No response from worker, retrying ... ");
+                printf("W: no response from server, retrying…");
                 close();
                 connect();
                 socket.send(request);
             }
         }
-        close();
     }
     return reply;
 }
