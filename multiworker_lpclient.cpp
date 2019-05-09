@@ -93,6 +93,7 @@ string WorkerClientBase::sendTX(string payload) {
                 }
                 else {
                     cout << "E: malformed reply from server: " << reply << endl;
+                    expect_reply = false;
                 }
             }
             else

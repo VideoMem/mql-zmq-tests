@@ -52,13 +52,11 @@ void WorkerClientBase::init() {
 }
 
 void WorkerClientBase::close() {
-    socket.close();
     delete socket;
 }
 
 WorkerClientBase::~WorkerClientBase() {
     close();
-    delete socket;
     delete context;
 }
 
@@ -66,8 +64,11 @@ WorkerClientBase::~WorkerClientBase() {
 //sample code in c++ http://zguide.zeromq.org/cpp:lpclient
 void WorkerClientBase::connect() {
     printf("I: connecting to server…");
+    Sleep(3);
     init();
-    socket.connect(zmq_address);
+    printf("Init Ok");
+    Sleep(3);
+    printf("Connect %d", socket.connect(zmq_address));
 
     //  Configure socket to not wait at close time
     int linger = 0;
@@ -75,32 +76,36 @@ void WorkerClientBase::connect() {
 }
 
 ZmqMsg WorkerClientBase::sendTX(string payload) {
-    ZmqMsg request(payload);
-    ZmqMsg reply;
     int retries_left = REQUEST_RETRIES;
+    ZmqMsg reply;
 
     while(retries_left) {
+        ZmqMsg request(payload);
+        printf("Send");
         socket.send(request);
-
+        printf("Sent");
         bool expect_reply = true;
         while(expect_reply) {
+            ZmqMsg reply;
             //  Poll socket for a reply, with timeout
             PollItem item;
             PollItem items[1];
             socket.fillPollItem(item, ZMQ_POLLIN);
             items[0] = item;
+            printf("Poll");
             socket.poll(items, REQUEST_TIMEOUT);
-
             //  If we got a reply, process it
             if ((items[0].revents & ZMQ_POLLIN) == 1) {
+                printf("Revents");
                 //  We got a reply from the server
                 socket.recv(reply);
                 if(reply.size() > 0) {
                     printf("I: server replied OK (%d) bytes", reply.size());
-                    retries_left = 0;
-                    expect_reply = false;
-                } else 
+                    return reply;
+                } else {
                     printf("E: malformed reply from server: %s", reply.getData());
+                    expect_reply=false;
+                }
             }
             else
             if(--retries_left == 0) {
@@ -108,11 +113,13 @@ ZmqMsg WorkerClientBase::sendTX(string payload) {
                 expect_reply = false;
                 close();
                 connect();
-                break;
+                return reply;
             } else {
                 printf("W: no response from server, retrying…");
                 close();
                 connect();
+                ZmqMsg request(payload);
+                string req = request.getData();
                 socket.send(request);
             }
         }
@@ -140,9 +147,10 @@ WorkerB *workerB;
 int OnInit()  {
    workerA = new WorkerA("tcp://localhost:5555");
    workerB = new WorkerB("tcp://localhost:5566");
-
+   loop();
    return(INIT_SUCCEEDED);
 }
+
 //+------------------------------------------------------------------+
 //| Expert deinitialization function                                 |
 //+------------------------------------------------------------------+
@@ -155,10 +163,15 @@ void OnDeinit(const int reason) {
 //| Expert tick function                                             |
 //+------------------------------------------------------------------+
 int tickC = 0;
+void loop() {
+    while(true) {
+        printf("On tick loop number: %d", tickC);
+        workerA.txSomething();
+        workerB.txSomething();
+        tickC++;
+    }
+}
+
 void OnTick() {
-    printf("On tick loop number: %d", tickC);
-    workerA.txSomething();
-    workerB.txSomething();
-    tickC++;
 }
 //+------------------------------------------------------------------+
