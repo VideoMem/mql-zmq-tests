@@ -25,9 +25,9 @@ while True:
     cycles += 1
 
     # Simulate various problems, after a few cycles
-    if cycles > 3 and randint(0, 3) == 0:
+    if cycles > 3 and randint(0, 30) == 0:
         print("I: Simulating a crash")
-        break
+        time.sleep(4)
     elif cycles > 3 and randint(0, 3) == 0:
         print("I: Simulating CPU overload")
         time.sleep(2)

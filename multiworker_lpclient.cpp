@@ -118,12 +118,12 @@ string WorkerClientBase::sendTX(string payload) {
 
 void WorkerA::txSomething() {
     string payload = "#this is a R script";
-    printf("reply body: %s", sendTX(payload).c_str());
+    printf("reply body: %s\n", sendTX(payload).c_str());
 }
 
 void WorkerB::txSomething() {
     string payload = "{ \"some_json_log\": { \"SYMBOL\": \"EURUSD\", \"MAGIC\": \"42\", \"etc ...\":\"etc\" }}";
-    printf("reply body: %s", sendTX(payload).c_str());
+    printf("reply body: %s\n", sendTX(payload).c_str());
 }
 
 WorkerA* workerA;
