@@ -17,7 +17,7 @@ import zmq
 
 context = zmq.Context(1)
 server = context.socket(zmq.REP)
-server.bind("tcp://*:5566")
+server.bind("tcp://*:5555")
 
 cycles = 0
 while True:
@@ -33,7 +33,7 @@ while True:
         time.sleep(2)
 
     print("I: Normal request (%s)" % request)
-    time.sleep(1) # Do some heavy work
+    #time.sleep(1) # Do some heavy work
     server.send(request)
 
 server.close()

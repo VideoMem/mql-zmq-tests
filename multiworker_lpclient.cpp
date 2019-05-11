@@ -48,8 +48,10 @@ void WorkerClientBase::init() {
 }
 
 void WorkerClientBase::close() {
-    client->close();
-    delete client;
+   // zmq_ctx_shutdown(context);
+   // context = new zmq::context_t(1);
+   // zmq_close(client);
+   delete client;
 }
 
 WorkerClientBase::~WorkerClientBase() {
@@ -64,7 +66,10 @@ void WorkerClientBase::connect() {
 
     //  Configure socket to not wait at close time
     int linger = 0;
+    int enable = 1;
     client->setsockopt (ZMQ_LINGER, &linger, sizeof (linger));
+    //client->setsockopt (ZMQ_REQ_RELAXED, &enable, sizeof(enable));
+    client->setsockopt (ZMQ_REQ_CORRELATE, &enable, sizeof(enable));
 }
 
 string WorkerClientBase::sendTX(string payload) {
@@ -115,14 +120,21 @@ string WorkerClientBase::sendTX(string payload) {
     }
     return reply;
 }
+int tickC = 0;
 
 void WorkerA::txSomething() {
-    string payload = "#this is a R script";
+    string f_payload = "%d #this is a R script";
+    char buf[256];
+    sprintf(buf, f_payload.c_str(), tickC);
+    string payload = buf;
     printf("reply body: %s\n", sendTX(payload).c_str());
 }
 
 void WorkerB::txSomething() {
-    string payload = "{ \"some_json_log\": { \"SYMBOL\": \"EURUSD\", \"MAGIC\": \"42\", \"etc ...\":\"etc\" }}";
+    string f_payload = "%d { \"some_json_log\": { \"SYMBOL\": \"EURUSD\", \"MAGIC\": \"42\", \"etc ...\":\"etc\" }}";
+    char buf[256];
+    sprintf(buf, f_payload.c_str(), tickC);
+    string payload = buf;
     printf("reply body: %s\n", sendTX(payload).c_str());
 }
 
@@ -134,7 +146,6 @@ void OnInit() {
    workerB = new WorkerB("tcp://localhost:5566");
 }
 
-int tickC = 0;
 void OnTick() {
     printf("On tick loop number %d:\n", tickC);
     workerA->txSomething();
