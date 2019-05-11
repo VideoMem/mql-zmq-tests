@@ -11,9 +11,8 @@ using namespace std;
 #define REQUEST_TIMEOUT     2500    //  msecs, (> 1000!)
 #define REQUEST_RETRIES     3       //  Before we abandon
 #define LPC_ERR_REXCEED     787
+#define LPC_ERR_INVALIDHANDLE  689
 #define LPC_MAX_WORKERS     1024    //max workers in this api
-
-int tickC = 0; //for OnTick();
 
 class LazyPirate {
     protected:
@@ -157,21 +156,15 @@ string LazyPirate::sendTX(string payload) {
     return reply;
 }
 
-class WorkerA: public LazyPirate {
+class Worker: public LazyPirate {
     public:
-        WorkerA(string addr) { setName("WorkerA"); setAddr(addr); connect(); }
-        void txSomething();
+        Worker(string addr) { setName("Worker"); setAddr(addr); connect(); }
+        void echo(string p);
 };
 
-class WorkerB: public LazyPirate {
-    public:
-        WorkerB(string addr) { setName("WorkerB"); setAddr(addr); connect(); }
-        void txSomething();
-};
-
-
-void WorkerA::txSomething() {
-    string f_payload = "%d #this is a R script";
+int tickC = 0;
+void Worker::echo(string pay) {
+    string f_payload = "%d " + pay;
     char buf[256];
     sprintf(buf, f_payload.c_str(), tickC);
     string payload = buf;
@@ -179,27 +172,91 @@ void WorkerA::txSomething() {
     printf("Last error context: %s\n", getLErrContext().c_str());
 }
 
-void WorkerB::txSomething() {
-    string f_payload = "%d { \"some_json_log\": { \"SYMBOL\": \"EURUSD\", \"MAGIC\": \"42\", \"etc ...\":\"etc\" }}";
-    char buf[256];
-    sprintf(buf, f_payload.c_str(), tickC);
-    string payload = buf;
-    printf("reply body: %s\n", sendTX(payload).c_str());
-    printf("Last error context: %s\n", getLErrContext().c_str());
+string rPay() {
+    string payload = "#this is a R script";
+    return payload;
 }
 
-WorkerA* workerA;
-WorkerB* workerB;
+string jsonPay() {
+    string payload = "{ \"some_json_log\": { \"SYMBOL\": \"EURUSD\", \"MAGIC\": \"42\", \"etc ...\":\"etc\" }}";
+    return payload;
+}
+
+Worker *workers[LPC_MAX_WORKERS];
+int wid = 0;
+
+bool check_bounds(int w) { return (w >= 0 && w < wid && w < LPC_MAX_WORKERS)? true: false;}
+
+int worker_add(string name, string address) {
+    if(wid >= 0 || wid < LPC_MAX_WORKERS) {
+        workers[wid] = new Worker(address);
+        workers[wid]->setName(name);
+        int id = wid;
+        wid++;
+        return id;
+    } else
+        return -1;
+}
+
+string worker_tx(int id, string payload) {
+    string reply = "";
+    if(check_bounds(id))
+        reply = workers[id]->sendTX(payload);
+    else
+        reply = "";
+    return reply;
+}
+
+void worker_echo(int id, string payload) {
+    if(check_bounds(id))
+        workers[id]->echo(payload);
+}
+
+string worker_name(int id) {
+    string name = "";
+    if(check_bounds(id))
+        name = workers[id]->getName();
+    else {
+        char buf[256];
+        sprintf(buf ,"%d: Worker non initialized", id);
+        name = buf;
+    }
+    return name;
+}
+
+int worker_lasterror(int id) {
+    int error = 0;
+    if(check_bounds(id))
+        error = workers[id]->getLastError();
+    else {
+        error = LPC_ERR_INVALIDHANDLE;
+    }
+    return error;
+}
+
+string worker_lasterrctx(int id) {
+    string errctx = "";
+    if(check_bounds(id))
+        errctx = workers[id]->getLErrContext();
+    else  {
+        char buf[256];
+        sprintf(buf ,"%d: Worker non initialized", id);
+        errctx = buf;
+    }
+}
 
 void OnInit() {
-   workerA = new WorkerA("tcp://localhost:5555");
-   workerB = new WorkerB("tcp://localhost:5566");
+    worker_add("WorkerA", "tcp://localhost:5555");
+    worker_add("WorkerB", "tcp://localhost:5566");
 }
 
 void OnTick() {
     printf("On tick loop number %d:\n", tickC);
-    workerA->txSomething();
-    workerB->txSomething();
+    int pos = tickC % wid;
+    if(pos % 2 == 0)
+        worker_echo(pos, rPay());
+    else
+        worker_echo(pos, jsonPay());
     tickC++;
 }
 
