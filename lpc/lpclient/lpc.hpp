@@ -11,6 +11,8 @@ class LazyPirate {
     protected:
         string zmq_address;
         string name;
+        string reply_buffer;
+        size_t reply_size;
         int request_retries;
         int request_timeout;
         int error_code;
@@ -35,6 +37,8 @@ class LazyPirate {
         void setRequestRetries(int v) { request_retries = v; }
         void setRequestTimeout(int v) { request_timeout = v; }
         string sendTX(string payload);
+        void getLastReply(string &r) { r = reply_buffer; }
+        void getLastReplySize(size_t &s) { s = reply_size; }
         LazyPirate();
         ~LazyPirate();
 };
@@ -146,6 +150,8 @@ string LazyPirate::sendTX(string payload) {
             }
         }
     }
+    reply_buffer = reply;
+    reply_size = reply.size();
     return reply;
 }
 

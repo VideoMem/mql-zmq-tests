@@ -39,10 +39,27 @@ LPCCALL size_t worker_tx(widptr_t id, string_t* payload, string_t* rx) {
         reply = workers[id]->sendTX(stdpayload);
     else
         reply = "";
-    string_unmarshall(reply,rx);
+    //string_unmarshall(reply,rx);
 
     __tickC++;
     return (size_t) reply.size();
+}
+
+LPCCALL size_t worker_getreplysize(widptr_t id) {
+    size_t replysize = 0;
+    if(check_bounds(id))
+        workers[id]->getLastReplySize(replysize);
+    return replysize;
+}
+
+LPCCALL void worker_getreply(widptr_t id, char *ret, int_t size) {
+    string reply = "";
+    ret[0] = 0;
+    if(check_bounds(id) && size > 0) {
+        workers[id]->getLastReply(reply);
+        strncpy(ret, reply.c_str(), size);
+        ret[size-1]=0;
+    }
 }
 
 LPCCALL void worker_echo(widptr_t id, string_t* payload) {
@@ -114,6 +131,5 @@ LPCCALL void worker_setaddr(widptr_t id, string_t* addr) {
 LPCCALL void worker_deinit(void) {
     for(int i = 0; i < wid; i++)
         delete(workers[i]);
-    Sleep(3);
     wid = 0;
 }
