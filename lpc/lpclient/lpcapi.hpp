@@ -96,3 +96,17 @@ LPCCALL void worker_setRequestRetries(widptr_t id, int_t value) {
     if(check_bounds(id))
         workers[id]->setRequestRetries(value);
 }
+
+LPCCALL void worker_setname(widptr_t id, string_t* name) {
+    string Name;
+    string_marshall(name, Name);
+    if(check_bounds(id))
+        workers[id]->setName(Name);
+}
+
+LPCCALL void worker_setaddr(widptr_t id, string_t* addr) {
+    string Addr;
+    string_marshall(addr, Addr);
+    if(check_bounds(id))
+        workers[id]->setName(Addr);
+}
