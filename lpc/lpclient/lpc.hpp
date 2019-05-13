@@ -1,12 +1,11 @@
 #include "zhelpers.hpp"
-#include <sstream>
-using namespace std;
 
-#define REQUEST_TIMEOUT     2500    //  msecs, (> 1000!)
-#define REQUEST_RETRIES     3       //  Before we abandon
-#define LPC_ERR_REXCEED     787
-#define LPC_ERR_INVALIDHANDLE  689
-#define LPC_MAX_WORKERS     1024    //max workers in this api
+//default values
+#define REQUEST_TIMEOUT         2500    //  msecs, (> 1000!)
+#define REQUEST_RETRIES         3       //  Before we abandon
+#define LPC_ERR_REXCEED         787
+#define LPC_ERR_INVALIDHANDLE   689
+#define LPC_MAX_WORKERS         1024    //max workers in this api
 
 class LazyPirate {
     protected:
@@ -61,7 +60,7 @@ LazyPirate::~LazyPirate() {
 }
 
 void LazyPirate::connect() {
-    cout << "I: connecting to server…" << endl;
+    cout << "I: connecting to server..." << endl;
     try {
         init();
         client->connect (zmq_address);
@@ -111,7 +110,7 @@ string LazyPirate::sendTX(string payload) {
         bool expect_reply = true;
         while (expect_reply) {
             //  Poll socket for a reply, with timeout
-            zmq::pollitem_t items[] = { { *client, 0, ZMQ_POLLIN, 0 } };
+            zmq::pollitem_t items[] = { { (void*) *client, 0, ZMQ_POLLIN, 0 } };
             safePoll(items);
             //  If we got a reply, process it
             if (items[0].revents & ZMQ_POLLIN) {
@@ -138,7 +137,7 @@ string LazyPirate::sendTX(string payload) {
                 break;
             }
             else {
-                cout << "W: no response from server, retrying…" << endl;
+                cout << "W: no response from server, retrying..." << endl;
                 //  Old socket will be confused; close it and open a new one
                 close();
                 connect();

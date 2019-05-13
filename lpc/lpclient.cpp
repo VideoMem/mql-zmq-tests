@@ -1,4 +1,5 @@
 #include "lpclient.hpp"
+#include "lpclient/lpcapi.hpp"
 
 int_t LPCCALL int_echo(int_t a) {
     return a;

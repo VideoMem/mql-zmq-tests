@@ -17,9 +17,10 @@ string jsonPay() {
 }
 
 void OnInit() {
-    widptr_t handle = worker_add("WorkerA", "tcp://localhost:5555");
+    widptr_t handle;
+    worker_add("WorkerA", "tcp://localhost:5555", handle);
     worker_setRequestTimeout(handle, 5000);
-    worker_add("WorkerB", "tcp://localhost:5566");
+    worker_add("WorkerB", "tcp://localhost:5566", handle);
 }
 
 void OnTick() {

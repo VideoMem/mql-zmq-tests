@@ -1,4 +1,4 @@
-#include "hwtypes.hpp"
+#include "lpclient/hwtypes.hpp"
 
 #ifdef _WIN32
 
@@ -28,9 +28,19 @@ extern "C"
 #endif
 
 /* Declare our <type> echo function using the above definitions. */
-LPCAPI int_t LPCCALL int_echo(int_t a);
-LPCAPI size_t LPCCALL string_echo(string_t* a, string_t* r);
+LPCAPI int_t  LPCCALL int_echo                  (int_t a);
+LPCAPI size_t LPCCALL string_echo               (string_t* a, string_t* r);
+LPCAPI void   LPCCALL worker_add                (string_t* name, string_t* address, widptr_t& nid);
+LPCAPI void   LPCCALL worker_echo               (widptr_t id, string_t* msg);
+LPCAPI size_t LPCCALL worker_tx                 (widptr_t id, string_t* send, string_t* receive);
+LPCAPI void   LPCCALL worker_getname            (widptr_t id, string_t* name);
+LPCAPI void   LPCCALL worker_getLastError       (widptr_t id, int_t &err);
+LPCAPI void   LPCCALL worker_getLErrContext     (widptr_t id, string_t* err);
+LPCAPI void   LPCCALL worker_setRequestTimeout  (widptr_t id, int_t timeout);
+LPCAPI void   LPCCALL worker_setRequestRetries  (widptr_t id, int_t value);
 
 #ifdef __cplusplus
 } // __cplusplus defined.
 #endif
+
+
