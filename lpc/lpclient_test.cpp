@@ -19,7 +19,6 @@ void OnInit() {
     string_t a[string_size(addr)] = {0};
     string_unmarshall(name,n);
     string_unmarshall(addr,a);
-    printf("workerAdd\n");
     worker_add(n, a, handle);
     worker_setRequestTimeout(handle, 5000);
 

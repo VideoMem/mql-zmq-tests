@@ -110,3 +110,10 @@ LPCCALL void worker_setaddr(widptr_t id, string_t* addr) {
     if(check_bounds(id))
         workers[id]->setName(Addr);
 }
+
+LPCCALL void worker_deinit(void) {
+    for(int i = 0; i < wid; i++)
+        delete(workers[i]);
+    Sleep(3);
+    wid = 0;
+}

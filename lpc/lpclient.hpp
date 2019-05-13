@@ -40,6 +40,7 @@ LPCAPI void   LPCCALL worker_getLastError       (widptr_t id, int_t &err);
 LPCAPI void   LPCCALL worker_getLErrContext     (widptr_t id, string_t* err);
 LPCAPI void   LPCCALL worker_setRequestTimeout  (widptr_t id, int_t timeout);
 LPCAPI void   LPCCALL worker_setRequestRetries  (widptr_t id, int_t value);
+LPCAPI void   LPCCALL worker_deinit             (void);
 
 #ifdef __cplusplus
 } // __cplusplus defined.
