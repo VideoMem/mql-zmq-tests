@@ -31,7 +31,7 @@ LPCCALL void worker_add(string_t* name, string_t* address, widptr_t& nid) {
         nid = -1;
 }
 
-LPCCALL size_t worker_tx(widptr_t id, string_t* payload, string_t* rx) {
+LPCCALL size_t worker_send(widptr_t id, string_t* payload) {
     string stdpayload;
     string_marshall(payload, stdpayload);
     string reply = "";
@@ -39,7 +39,6 @@ LPCCALL size_t worker_tx(widptr_t id, string_t* payload, string_t* rx) {
         reply = workers[id]->sendTX(stdpayload);
     else
         reply = "";
-    //string_unmarshall(reply,rx);
 
     __tickC++;
     return (size_t) reply.size();

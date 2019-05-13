@@ -32,7 +32,7 @@ LPCAPI int_t  LPCCALL int_echo                  (int_t a);
 LPCAPI size_t LPCCALL string_echo               (string_t* a, string_t* r);
 LPCAPI void   LPCCALL worker_add                (string_t* name, string_t* address, widptr_t& nid);
 LPCAPI void   LPCCALL worker_echo               (widptr_t id, string_t* msg);
-LPCAPI size_t LPCCALL worker_tx                 (widptr_t id, string_t* send, string_t* receive);
+LPCAPI size_t LPCCALL worker_send               (widptr_t id, string_t* send);
 LPCAPI int_t  LPCCALL worker_getreplysize       (widptr_t id);
 LPCAPI void   LPCCALL worker_getreply           (widptr_t id, char* reply, int_t size);
 LPCAPI void   LPCCALL worker_setaddr            (widptr_t id, string_t* address);
