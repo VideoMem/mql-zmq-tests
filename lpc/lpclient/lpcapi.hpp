@@ -11,15 +11,25 @@ void Worker::echo(string pay) {
     printf("Last error context: %s\n", getLErrContext().c_str());
 }
 
+//safe null strcpy
+void string_copy(char* src, string &ret, int_t len) {
+    int dstsize = len + 1;
+    char dst[dstsize] = {0};
+    strncpy(dst, src, len);
+    dst[dstsize] = 0;
+    ret = dst;
+}
+
 Worker *workers[LPC_MAX_WORKERS];
 widptr_t wid = 0;
 
 bool check_bounds(widptr_t w) { return (w >= 0 && w < wid && w < LPC_MAX_WORKERS)? true: false;}
 
-LPCCALL void worker_add(string_t* name, string_t* address, widptr_t& nid) {
-    string stdname, stdaddr;
-    string_marshall(name, stdname);
-    string_marshall(address, stdaddr);
+LPCCALL void worker_add(char* name, int_t nlen, char* address, int_t alen, widptr_t& nid) {
+    string stdname;
+    string stdaddr;
+    string_copy(name, stdname, nlen);
+    string_copy(address, stdaddr, alen);
 
     if(wid >= 0 || wid < LPC_MAX_WORKERS) {
         workers[wid] = new Worker(stdaddr);
@@ -31,9 +41,9 @@ LPCCALL void worker_add(string_t* name, string_t* address, widptr_t& nid) {
         nid = -1;
 }
 
-LPCCALL size_t worker_send(widptr_t id, string_t* payload) {
+LPCCALL size_t worker_send(widptr_t id, char* payload, int_t psize) {
     string stdpayload;
-    string_marshall(payload, stdpayload);
+    string_copy(payload, stdpayload, psize);
     string reply = "";
     if(check_bounds(id))
         reply = workers[id]->sendTX(stdpayload);
@@ -61,15 +71,15 @@ LPCCALL void worker_getreply(widptr_t id, char *ret, int_t size) {
     }
 }
 
-LPCCALL void worker_echo(widptr_t id, string_t* payload) {
+LPCCALL void worker_echo(widptr_t id, char* payload, int_t len) {
     string stdpayload;
-    string_marshall(payload, stdpayload);
+    string_copy(payload, stdpayload, len);
     if(check_bounds(id))
         workers[id]->echo(stdpayload);
     __tickC++;
 }
 
-LPCCALL void worker_getname(widptr_t id, string_t* name) {
+LPCCALL void worker_getname(widptr_t id, char* name, int_t &size) {
     string stdname = "";
     if(check_bounds(id))
         stdname = workers[id]->getName();
@@ -78,7 +88,8 @@ LPCCALL void worker_getname(widptr_t id, string_t* name) {
         sprintf(buf ,"%d: Worker non initialized", id);
         stdname = buf;
     }
-    string_unmarshall(stdname, name);
+    size = strlen(stdname.c_str());
+    strncpy(name, stdname.c_str(), size);
 }
 
 LPCCALL void worker_getLastError(widptr_t id, int_t &err) {
@@ -91,7 +102,7 @@ LPCCALL void worker_getLastError(widptr_t id, int_t &err) {
     err = (int_t) error;
 }
 
-LPCCALL void worker_getLErrContext(widptr_t id, string_t* err) {
+LPCCALL void worker_getLErrContext(widptr_t id, char* err, int_t &size) {
     string errctx = "";
     if(check_bounds(id))
         errctx = workers[id]->getLErrContext();
@@ -100,7 +111,8 @@ LPCCALL void worker_getLErrContext(widptr_t id, string_t* err) {
         sprintf(buf ,"%d: Worker non initialized", id);
         errctx = buf;
     }
-    string_unmarshall(errctx, err);
+    size = strlen(errctx.c_str());
+    strncpy(err, errctx.c_str(), size);
 }
 
 LPCCALL void worker_setRequestTimeout(widptr_t id, int_t value) {
@@ -113,16 +125,16 @@ LPCCALL void worker_setRequestRetries(widptr_t id, int_t value) {
         workers[id]->setRequestRetries(value);
 }
 
-LPCCALL void worker_setname(widptr_t id, string_t* name) {
+LPCCALL void worker_setname(widptr_t id, char* name, int_t size) {
     string Name;
-    string_marshall(name, Name);
+    string_copy(name, Name, size);
     if(check_bounds(id))
         workers[id]->setName(Name);
 }
 
-LPCCALL void worker_setaddr(widptr_t id, string_t* addr) {
+LPCCALL void worker_setaddr(widptr_t id, char* addr, int_t size) {
     string Addr;
-    string_marshall(addr, Addr);
+    string_copy(addr, Addr, size);
     if(check_bounds(id))
         workers[id]->setName(Addr);
 }

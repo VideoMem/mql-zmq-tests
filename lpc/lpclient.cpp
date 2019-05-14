@@ -13,3 +13,7 @@ size_t LPCCALL string_echo(string_t* src, string_t* dst) {
     wcscpy(dst,wstring);
     return wcslen(src);
 }
+
+size_t LPCCALL char_echo(char* src, char* dst, int_t len) {
+    strncpy(dst, src, len);
+}
