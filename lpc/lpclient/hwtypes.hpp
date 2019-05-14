@@ -3,6 +3,14 @@
 #include <sstream>
 using namespace std;
 
+//default values
+#define REQUEST_TIMEOUT         2500    //  msecs, (> 1000!)
+#define REQUEST_RETRIES         3       //  Before we abandon
+#define LPC_ERR_REXCEED         787
+#define LPC_ERR_INVALIDHANDLE   689
+#define LPC_MAX_WORKERS         65535   //max workers in this api
+#define LPC_ERR_NOERROR         0
+
 //Cross DLL boundaries types.
 #define int_t    uint32_t
 #define widptr_t int_t

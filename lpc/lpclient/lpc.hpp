@@ -1,12 +1,5 @@
 #include "zhelpers.hpp"
 
-//default values
-#define REQUEST_TIMEOUT         2500    //  msecs, (> 1000!)
-#define REQUEST_RETRIES         3       //  Before we abandon
-#define LPC_ERR_REXCEED         787
-#define LPC_ERR_INVALIDHANDLE   689
-#define LPC_MAX_WORKERS         1024    //max workers in this api
-
 class LazyPirate {
     protected:
         string zmq_address;
@@ -28,17 +21,22 @@ class LazyPirate {
         void safeRecv(string&);
 
    public:
-        string getName() { return name; }
-        bool hasError() { return error_code==0 ? true: false; }
-        int getLastError() { return error_code; }
-        string getLErrContext() { return error_context; }
-        void setName(string n) { name = n; }
-        void setAddr(string addr) { zmq_address = addr; }
-        void setRequestRetries(int v) { request_retries = v; }
-        void setRequestTimeout(int v) { request_timeout = v; }
-        string sendTX(string payload);
-        void getLastReply(string &r) { r = reply_buffer; }
-        void getLastReplySize(size_t &s) { s = reply_size; }
+        bool    hasError()        { return error_code==0 ? true: false; }
+        int     getLastError()    { return error_code; }
+        string  getLErrContext()  { return error_context; }
+
+        void    setName(string n) { name = n; }
+        string  getName()         { return name; }
+
+        void    setAddr(string addr)     { zmq_address = addr; }
+        string  getAddr()                { return zmq_address; }
+        void    setRequestRetries(int v) { request_retries = v; }
+        void    setRequestTimeout(int v) { request_timeout = v; }
+        int     getRequestTimeout()      { return request_timeout; }
+        int     getRequestRetries()      { return request_retries; }
+        void    getLastReply(string &r)     { r = reply_buffer; }
+        void    getLastReplySize(size_t &s) { s = reply_size; }
+        string  sendTX(string payload);
         LazyPirate();
         ~LazyPirate();
 };
@@ -47,6 +45,7 @@ LazyPirate::LazyPirate() {
     context = new zmq::context_t(1);
     request_retries = REQUEST_RETRIES;
     request_timeout = REQUEST_TIMEOUT;
+    setError(LPC_ERR_NOERROR, "Object constructor OK");
 }
 
 void LazyPirate::init() {
@@ -125,7 +124,7 @@ string LazyPirate::sendTX(string payload) {
                     cout << "I: server replied OK (" << reply.size() << ") bytes" << endl;
                     retries_left = 0;
                     expect_reply = false;
-                    setError(0, name + "::sendTX() sucess!");
+                    setError(LPC_ERR_NOERROR, name + "::sendTX() sucess!");
                 }
                 else {
                     cout << "E: malformed reply from server: " << reply << endl;
