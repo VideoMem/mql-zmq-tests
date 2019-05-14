@@ -12,9 +12,9 @@ void Worker::echo(string pay) {
 }
 
 //safe null strcpy
-void string_copy(char* src, string &ret, int_t len) {
+void string_copy(const char_t* src, string &ret, int_t len) {
     int dstsize = len + 1;
-    char dst[dstsize] = {0};
+    char_t dst[dstsize] = {0};
     strncpy(dst, src, len);
     dst[dstsize] = 0;
     ret = dst;
@@ -25,7 +25,7 @@ widptr_t wid = 0;
 
 bool check_bounds(widptr_t w) { return (w >= 0 && w < wid && w < LPC_MAX_WORKERS)? true: false;}
 
-LPCCALL void worker_add(char* name, int_t nlen, char* address, int_t alen, widptr_t& nid) {
+LPCCALL void worker_add(const char_t* name, int_t nlen, const char_t* address, int_t alen, widptr_t& nid) {
     string stdname;
     string stdaddr;
     string_copy(name, stdname, nlen);
@@ -41,7 +41,7 @@ LPCCALL void worker_add(char* name, int_t nlen, char* address, int_t alen, widpt
         nid = -1;
 }
 
-LPCCALL size_t worker_send(widptr_t id, char* payload, int_t psize) {
+LPCCALL size_t worker_send(widptr_t id, const char_t* payload, int_t psize) {
     string stdpayload;
     string_copy(payload, stdpayload, psize);
     string reply = "";
@@ -61,17 +61,18 @@ LPCCALL size_t worker_getreplysize(widptr_t id) {
     return replysize;
 }
 
-LPCCALL void worker_getreply(widptr_t id, char *ret, int_t size) {
+LPCCALL void worker_getreply(widptr_t id, char_t *ret) {
     string reply = "";
     ret[0] = 0;
-    if(check_bounds(id) && size > 0) {
+    if(check_bounds(id)) {
         workers[id]->getLastReply(reply);
+        int size = reply.size();
         strncpy(ret, reply.c_str(), size);
-        ret[size-1]=0;
+        ret[size]=0;
     }
 }
 
-LPCCALL void worker_echo(widptr_t id, char* payload, int_t len) {
+LPCCALL void worker_echo(widptr_t id, const char_t* payload, int_t len) {
     string stdpayload;
     string_copy(payload, stdpayload, len);
     if(check_bounds(id))
@@ -79,17 +80,18 @@ LPCCALL void worker_echo(widptr_t id, char* payload, int_t len) {
     __tickC++;
 }
 
-LPCCALL void worker_getname(widptr_t id, char* name, int_t &size) {
+LPCCALL void worker_getname(widptr_t id, char_t* name, int_t &size) {
     string stdname = "";
     if(check_bounds(id))
         stdname = workers[id]->getName();
     else {
-        char buf[256];
+        char_t buf[256];
         sprintf(buf ,"%d: Worker non initialized", id);
         stdname = buf;
     }
-    size = strlen(stdname.c_str());
+    size = stdname.size();
     strncpy(name, stdname.c_str(), size);
+    name[size] = 0;
 }
 
 LPCCALL void worker_getLastError(widptr_t id, int_t &err) {
@@ -102,17 +104,18 @@ LPCCALL void worker_getLastError(widptr_t id, int_t &err) {
     err = (int_t) error;
 }
 
-LPCCALL void worker_getLErrContext(widptr_t id, char* err, int_t &size) {
+LPCCALL void worker_getLErrContext(widptr_t id, char_t* err, int_t &len) {
     string errctx = "";
     if(check_bounds(id))
         errctx = workers[id]->getLErrContext();
     else  {
-        char buf[256];
+        char_t buf[256];
         sprintf(buf ,"%d: Worker non initialized", id);
         errctx = buf;
     }
-    size = strlen(errctx.c_str());
-    strncpy(err, errctx.c_str(), size);
+    len = errctx.size();
+    strncpy(err, errctx.c_str(), len);
+    err[len] = 0;
 }
 
 LPCCALL void worker_setRequestTimeout(widptr_t id, int_t value) {
@@ -125,14 +128,14 @@ LPCCALL void worker_setRequestRetries(widptr_t id, int_t value) {
         workers[id]->setRequestRetries(value);
 }
 
-LPCCALL void worker_setname(widptr_t id, char* name, int_t size) {
+LPCCALL void worker_setname(widptr_t id, const char_t* name, int_t size) {
     string Name;
     string_copy(name, Name, size);
     if(check_bounds(id))
         workers[id]->setName(Name);
 }
 
-LPCCALL void worker_setaddr(widptr_t id, char* addr, int_t size) {
+LPCCALL void worker_setaddr(widptr_t id, const char_t* addr, int_t size) {
     string Addr;
     string_copy(addr, Addr, size);
     if(check_bounds(id))
